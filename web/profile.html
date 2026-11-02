@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人主页 - Todo</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<h1>个人主页</h1>
+
+<section class="profile-section">
+    <h2>个人资料</h2>
+
+    <p id="profileError" class="error-message" hidden></p>
+    <p id="profileMessage" class="success-message" hidden></p>
+
+    <div id="profileLoading">正在加载个人资料...</div>
+
+    <div id="profileContent" hidden>
+        <div class="profile-item">
+            <label>用户 ID</label>
+            <span id="profileId"></span>
+        </div>
+
+        <div class="profile-item">
+            <label>用户名</label>
+            <span id="profileUsername"></span>
+            <button type="button" id="editUsernameBtn">修改用户名</button>
+        </div>
+
+        <div class="profile-item">
+            <label>注册时间</label>
+            <span id="profileCreatedAt"></span>
+        </div>
+
+        <div class="profile-item">
+            <label>个人简介</label>
+
+            <!-- 默认展示简介，不直接展示编辑框 -->
+            <div id="profileDisplay"></div>
+
+            <button type="button" id="editProfileBtn">编辑简介</button>
+
+            <!-- 点击编辑后才显示 -->
+            <form id="profileForm" hidden>
+        <textarea
+                id="profileText"
+                name="profile"
+                rows="4"
+                maxlength="500"
+                placeholder="介绍一下自己..."
+        ></textarea>
+
+                <button type="submit">保存</button>
+                <button type="button" id="cancelProfileBtn">取消</button>
+            </form>
+        </div>
+
+        <hr>
+
+        <button type="button" id="editPasswordBtn">
+            修改密码
+        </button>
+
+        <button type="button" id="logoutBtn">
+            退出登录
+        </button>
+    </div>
+</section>
+
+<section>
+    <h2>创建任务</h2>
+    <form id="todoForm">
+        <div>
+            <label for="todoTitle">任务标题</label>
+            <input type="text" id="todoTitle" name="title" required>
+        </div>
+
+        <div>
+            <label for="todoContent">任务内容</label>
+            <textarea id="todoContent" name="content"></textarea>
+        </div>
+
+        <button type="submit">创建任务</button>
+    </form>
+    <p id="todoResult"></p>
+</section>
+
+<section>
+    <h2>我的任务</h2>
+    <button type="button" id="loadBtn">刷新任务</button>
+    <ul id="todoList"></ul>
+</section>
+
+<p id="pageResult"></p>
+
+<p><a href="/">返回首页</a></p>
+
+<!-- 删除确认弹窗 -->
+<div id="deleteDialog" class="dialog-backdrop" hidden>
+    <div class="dialog-box" role="dialog" aria-modal="true"
+         aria-labelledby="dialogTitle">
+        <h2 id="dialogTitle">删除任务</h2>
+        <p id="deleteMessage">确定要删除这条任务吗？此操作无法撤销。</p>
+
+        <div class="dialog-actions">
+            <button type="button" id="cancelDeleteBtn">取消</button>
+            <button type="button" id="confirmDeleteBtn" class="delete-btn">
+                确认删除
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/common.js"></script>
+<script src="/static/js/toast.js"></script>
+<script src="/static/js/profile.js"></script>
+</body>
+</html>
