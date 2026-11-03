@@ -7,12 +7,21 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	dsn := "todo:Fz0826327826@tcp(127.0.0.1:3306)/todo_app?parseTime=true&charset=utf8mb4"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("加载 .env 文件失败:", err)
+	}
+	dsn := os.Getenv("DSN")
+	if dsn == "" {
+		log.Fatalln("DSN 变量未设置")
+	}
 
 	db, err := repository.OpenMySQL(dsn)
 	if err != nil {
@@ -43,4 +52,5 @@ func main() {
 		fmt.Println(err)
 	}
 }
+
 // waht can i say
