@@ -28,6 +28,15 @@ type LoginService interface {
 		username string,
 		password string) (model.User, string, error)
 }
+type RegisterService interface {
+	Register(ctx context.Context,
+		username string,
+		password string) (model.User, string, error)
+}
+
+type LogoutService interface {
+	Logout(ctx context.Context, sessionID string) error
+}
 
 func (s *AuthService) Register(
 	ctx context.Context,

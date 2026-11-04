@@ -73,7 +73,7 @@ func LoginTodo(service service.LoginService) http.HandlerFunc {
 				WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
 			default:
-				WriteError(w, model.ErrInvalidCredentials.Error(), http.StatusUnauthorized)
+				WriteError(w, "", http.StatusInternalServerError)
 				return
 			}
 		}
@@ -90,30 +90,7 @@ func LoginTodo(service service.LoginService) http.HandlerFunc {
 	}
 }
 
-func LogoutTodo(service *service.AuthService) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		session, err := req.Cookie("session_id")
-		if err != nil {
-			WriteError(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		err = service.Logout(req.Context(), session.Value)
-		if err != nil {
-			WriteError(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     "session_id",
-			Value:    "",
-			Path:     "/",
-			MaxAge:   -1,
-			HttpOnly: true,
-		})
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
-func RegisterTodo(service *service.AuthService) http.HandlerFunc {
+func RegisterTodo(service service.RegisterService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		var reqdata model.LoginAndRegisterRequest
@@ -148,5 +125,27 @@ func RegisterTodo(service *service.AuthService) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(user)
+	}
+}
+func LogoutTodo(service service.LogoutService) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		session, err := req.Cookie("session_id")
+		if err != nil {
+			WriteError(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		err = service.Logout(req.Context(), session.Value)
+		if err != nil {
+			WriteError(w, "退出登录失败", http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_id",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			HttpOnly: true,
+		})
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

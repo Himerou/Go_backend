@@ -33,15 +33,15 @@ func (s *SessionStore) Create(userID int) (sessionID string, err error) {
 	session.UserID = userID
 	session.ExpiresAt = time.Now().Add(10 * time.Minute)
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.sessions[sessionID] = session
-	s.mu.Unlock()
 	return sessionID, nil
 }
 
 func (s *SessionStore) Delete(sessionID string) error {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	delete(s.sessions, sessionID)
-	s.mu.Unlock()
 	return nil
 }
 
