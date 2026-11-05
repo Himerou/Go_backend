@@ -55,7 +55,7 @@ func UpdateProfile(service service.UpdateProfileService) http.HandlerFunc {
 		profile, err := service.UpdateProfile(ctx, msg.Msg)
 		if err != nil {
 			if errors.Is(err, model.ErrUserNotFound) {
-				WriteError(w, err.Error(), http.StatusBadRequest)
+				WriteError(w, err.Error(), http.StatusNotFound)
 				return
 			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
@@ -77,8 +77,12 @@ func UpdatePassword(service service.UpdatePasswordService) http.HandlerFunc {
 		}
 		err := service.UpdatePassword(ctx, msg.Msg)
 		if err != nil {
+			if errors.Is(err, model.ErrUserNotFound) {
+				WriteError(w, err.Error(), http.StatusNotFound)
+				return
+			}
 			if errors.Is(err, model.ErrDuplicatedPassword) {
-				WriteError(w, err.Error(), http.StatusBadRequest)
+				WriteError(w, err.Error(), http.StatusConflict)
 				return
 			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
@@ -99,7 +103,7 @@ func UpdateUsername(service service.UpdateUsernameService) http.HandlerFunc {
 		profile, err := service.UpdateUsername(ctx, msg.Msg)
 		if err != nil {
 			if errors.Is(err, model.ErrDuplicateUsername) {
-				WriteError(w, err.Error(), http.StatusBadRequest)
+				WriteError(w, err.Error(), http.StatusConflict)
 				return
 			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
