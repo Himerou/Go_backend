@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func GetProfile(service *service.UserService) http.HandlerFunc {
+func GetProfile(service service.GetProfileService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		profile, err := service.GetProfile(ctx)
@@ -25,7 +25,7 @@ func GetProfile(service *service.UserService) http.HandlerFunc {
 		_ = json.NewEncoder(w).Encode(profile)
 	}
 }
-func GetPublicProfile(service *service.UserService) http.HandlerFunc {
+func GetPublicProfile(service service.GetPublicProfileService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		username := req.PathValue("username")
 		ctx := req.Context()
@@ -44,7 +44,7 @@ func GetPublicProfile(service *service.UserService) http.HandlerFunc {
 	}
 }
 
-func UpdateProfile(service *service.UserService) http.HandlerFunc {
+func UpdateProfile(service service.UpdateProfileService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		var msg model.Msg
@@ -67,7 +67,7 @@ func UpdateProfile(service *service.UserService) http.HandlerFunc {
 	}
 }
 
-func UpdatePassword(service *service.UserService) http.HandlerFunc {
+func UpdatePassword(service service.UpdatePasswordService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		var msg model.Msg
@@ -88,7 +88,7 @@ func UpdatePassword(service *service.UserService) http.HandlerFunc {
 	}
 }
 
-func UpdateUsername(service *service.UserService) http.HandlerFunc {
+func UpdateUsername(service service.UpdateUsernameService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		var msg model.Msg
@@ -111,7 +111,7 @@ func UpdateUsername(service *service.UserService) http.HandlerFunc {
 	}
 }
 
-func DeleteUser(service *service.UserService) http.HandlerFunc {
+func DeleteUser(service service.DeleteUserService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		err := service.DeleteUser(ctx)

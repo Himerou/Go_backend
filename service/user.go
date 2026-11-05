@@ -17,6 +17,10 @@ func NewUserService(user *repository.UserRepository) *UserService {
 	return &UserService{user: user}
 }
 
+type GetProfileService interface {
+	GetProfile(ctx context.Context) (model.PublicUserProfile, error)
+}
+
 func (s *UserService) GetProfile(
 	ctx context.Context) (model.PublicUserProfile, error) {
 	user, err := s.user.Get(ctx)
@@ -31,6 +35,11 @@ func (s *UserService) GetProfile(
 	}
 	return profile, nil
 }
+
+type GetPublicProfileService interface {
+	GetPublicProfile(ctx context.Context, username string) (model.PublicUserProfile, error)
+}
+
 func (s *UserService) GetPublicProfile(
 	ctx context.Context,
 	username string) (model.PublicUserProfile, error) {
@@ -48,6 +57,10 @@ func (s *UserService) GetPublicProfile(
 		CreatedAt: user.CreatedAt,
 	}
 	return profile, nil
+}
+
+type UpdateProfileService interface {
+	UpdateProfile(ctx context.Context, msg string) (model.PublicUserProfile, error)
 }
 
 func (s *UserService) UpdateProfile(
@@ -70,6 +83,11 @@ func (s *UserService) UpdateProfile(
 	}
 	return profile, nil
 }
+
+type UpdateUsernameService interface {
+	UpdateUsername(ctx context.Context, msg string) (model.PublicUserProfile, error)
+}
+
 func (s *UserService) UpdateUsername(
 	ctx context.Context,
 	msg string) (model.PublicUserProfile, error) {
@@ -97,6 +115,10 @@ func (s *UserService) UpdateUsername(
 	return profile, nil
 }
 
+type UpdatePasswordService interface {
+	UpdatePassword(ctx context.Context, msg string) error
+}
+
 func (s *UserService) UpdatePassword(
 	ctx context.Context,
 	msg string) error {
@@ -112,6 +134,10 @@ func (s *UserService) UpdatePassword(
 		return err
 	}
 	return nil
+}
+
+type DeleteUserService interface {
+	DeleteUser(ctx context.Context) error
 }
 
 func (s *UserService) DeleteUser(ctx context.Context) error {
