@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func ListTodos(service *service.TodoService) http.HandlerFunc {
+func ListTodos(service service.ListTodoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		content, err := service.List(req.Context())
 		if err != nil {
@@ -22,7 +22,7 @@ func ListTodos(service *service.TodoService) http.HandlerFunc {
 	}
 
 }
-func CreateTodo(service *service.TodoService) http.HandlerFunc {
+func CreateTodo(service service.CreateTodoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var todo model.Todo
 		if err := json.NewDecoder(req.Body).Decode(&todo); err != nil {
@@ -44,7 +44,7 @@ func CreateTodo(service *service.TodoService) http.HandlerFunc {
 	}
 
 }
-func GetTodo(service *service.TodoService) http.HandlerFunc {
+func GetTodo(service service.GetTodoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		id, err := strconv.Atoi(req.PathValue("id"))
 		if err != nil {
@@ -66,7 +66,7 @@ func GetTodo(service *service.TodoService) http.HandlerFunc {
 	}
 
 }
-func DeleteTodo(service *service.TodoService) http.HandlerFunc {
+func DeleteTodo(service service.DeleteTodoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		id, err := strconv.Atoi(req.PathValue("id"))
 		if err != nil {
@@ -80,7 +80,7 @@ func DeleteTodo(service *service.TodoService) http.HandlerFunc {
 				return
 			}
 			if errors.Is(err, model.ErrUnauthorized) {
-				WriteError(w, err.Error(), http.StatusUnauthorized)
+				WriteError(w, "未登录", http.StatusUnauthorized)
 				return
 			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
@@ -90,7 +90,7 @@ func DeleteTodo(service *service.TodoService) http.HandlerFunc {
 	}
 
 }
-func UpdateTodo(service *service.TodoService) http.HandlerFunc {
+func UpdateTodo(service service.UpdateTodoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		id, err := strconv.Atoi(req.PathValue("id"))
 		if err != nil {
