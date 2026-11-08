@@ -1,4 +1,4 @@
-package service
+package repository
 
 import (
 	"crypto/rand"
@@ -58,3 +58,4 @@ func (s *SessionStore) Get(sessionID string) (userID int, ok bool) {
 	}
 	return session.UserID, ok
 }
+

@@ -27,8 +27,8 @@ func (r *UserRepository) Create(ctx context.Context, user model.User) (model.Use
 		user.Profile,
 	)
 	if err != nil {
-		var mysqlerr *mysql.MySQLError
-		if errors.As(err, &mysqlerr) && mysqlerr.Number == 1062 {
+		var mysqlErr *mysql.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 			return model.User{}, model.ErrDuplicateUsername
 		}
 		return model.User{}, fmt.Errorf("创建用户失败 %w", err)

@@ -2,7 +2,6 @@ package service
 
 import (
 	"GO_web/model"
-	"GO_web/repository"
 	"context"
 	"database/sql"
 	"errors"
@@ -12,12 +11,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserRepository interface {
+	Create(ctx context.Context, user model.User) (model.User, error)
+	Get(ctx context.Context) (model.User, error)
+	GetByUsername(ctx context.Context, username string) (model.User, error)
+	Delete(ctx context.Context) error
+	Update(ctx context.Context, user model.User) error
+	UpdatePassword(ctx context.Context, password string) error
+	UpdateProfile(ctx context.Context, msg string) error
+	UpdateUsername(ctx context.Context, name string) error
+}
+type SessionRepository interface {
+	Create(userID int) (sessionID string, err error)
+	Delete(sessionID string) error
+	Get(sessionID string) (userID int, ok bool)
+}
 type AuthService struct {
-	user    *repository.UserRepository
-	session *SessionStore
+	user    UserRepository
+	session SessionRepository
 }
 
-func NewAuthService(user *repository.UserRepository, session *SessionStore) *AuthService {
+func NewAuthService(user UserRepository, session SessionRepository) *AuthService {
 	return &AuthService{
 		user:    user,
 		session: session}

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func Middleware(s *service.SessionStore) func(http.Handler) http.HandlerFunc {
+func Middleware(s service.SessionRepository) func(http.Handler) http.HandlerFunc {
 	return func(next http.Handler) http.HandlerFunc {
 		return func(w http.ResponseWriter, req *http.Request) {
 			// 统一处理未登录的请求

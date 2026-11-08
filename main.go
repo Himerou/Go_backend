@@ -31,11 +31,9 @@ func main() {
 
 	log.Println("MySQL 连接成功")
 
-	repo := repository.NewMySQLTodoRepository(db)
-	todoService := service.NewTodoService(repo)
-
-	sessions := service.NewSessionStore()
-
+	todoRepo := repository.NewMySQLTodoRepository(db)
+	todoService := service.NewTodoService(todoRepo)
+	sessions := repository.NewSessionStore()
 	userRepo := repository.NewUserRepository(db)
 	authService := service.NewAuthService(userRepo, sessions)
 	userService := service.NewUserService(userRepo)
@@ -53,4 +51,4 @@ func main() {
 	}
 }
 
-// waht can i say
+// what can I say

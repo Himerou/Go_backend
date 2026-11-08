@@ -12,7 +12,7 @@ func NewRouter(
 	todoService *service.TodoService,
 	authService *service.AuthService,
 	userService *service.UserService,
-	sessions *service.SessionStore,
+	sessions service.SessionRepository,
 ) http.Handler {
 	mux := http.NewServeMux()
 
