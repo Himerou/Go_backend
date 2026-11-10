@@ -27,7 +27,10 @@ func (m *mockUserRepo) Get(ctx context.Context) (model.User, error) {
 
 func (m *mockUserRepo) GetByUsername(ctx context.Context, username string) (model.User, error) {
 	m.called++
-	return m.user, m.err
+	if username == m.user.Username {
+		return m.user, m.err
+	}
+	return model.User{}, model.ErrInternalServiceError
 }
 
 func (m *mockUserRepo) Delete(ctx context.Context) error {
@@ -42,16 +45,19 @@ func (m *mockUserRepo) Update(ctx context.Context, user model.User) error {
 
 func (m *mockUserRepo) UpdatePassword(ctx context.Context, password string) error {
 	m.called++
+	m.user.PasswordHash = password
 	return m.err
 }
 
 func (m *mockUserRepo) UpdateProfile(ctx context.Context, msg string) error {
 	m.called++
+	m.user.Profile = msg
 	return m.err
 }
 
 func (m *mockUserRepo) UpdateUsername(ctx context.Context, name string) error {
 	m.called++
+	m.user.Username = name
 	return m.err
 }
 
@@ -166,7 +172,7 @@ func TestRegister_ErrCases(t *testing.T) {
 			}
 			service := NewAuthService(mockUser, mockSession)
 			ctx := context.Background()
-			_, _, err := service.Login(ctx, tt.username, tt.password)
+			_, _, err := service.Register(ctx, tt.username, tt.password)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("期望得到报错 %v,实际得到%v", tt.wantErr, err)
 			}
@@ -178,7 +184,7 @@ func TestRegister_ErrCases(t *testing.T) {
 			if tt.userErr != nil && mockSession.called != 0 {
 				t.Errorf("UserRepository 出错后不应该创建 Session")
 			}
-			if tt.sessionErr != nil {
+			if tt.sessionErr == nil {
 				if mockSession.called != 0 {
 					t.Errorf("期望调用 SessionRepository 0次，实际 %d 次", mockSession.called)
 				}
@@ -275,7 +281,7 @@ func TestLogin_ErrCases(t *testing.T) {
 			}
 			service := NewAuthService(mockUser, mockSession)
 			ctx := context.Background()
-			_, _, err := service.Login(ctx, tt.username, tt.password)
+			_, session, err := service.Login(ctx, tt.username, tt.password)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("期望得到错误 %v,实际得到 %v", tt.wantErr, err)
 			}
@@ -289,8 +295,8 @@ func TestLogin_ErrCases(t *testing.T) {
 			if tt.sessionErr != nil && mockSession.called != 1 {
 				t.Errorf("期望调用 1次,实际调用 %v", mockSession.called)
 			}
-			if tt.wantErr != nil && mockSession.called != 0 {
-				t.Errorf("登录失败时不应该创建 Session")
+			if session != "" {
+				t.Errorf("登录失败 不应该创建session")
 			}
 		})
 	}

@@ -2,7 +2,6 @@ package service
 
 import (
 	"GO_web/model"
-	"GO_web/repository"
 	"context"
 	"strings"
 
@@ -10,10 +9,10 @@ import (
 )
 
 type UserService struct {
-	user *repository.UserRepository
+	user UserRepository
 }
 
-func NewUserService(user *repository.UserRepository) *UserService {
+func NewUserService(user UserRepository) *UserService {
 	return &UserService{user: user}
 }
 
@@ -67,6 +66,9 @@ func (s *UserService) UpdateProfile(
 	ctx context.Context,
 	msg string,
 ) (model.PublicUserProfile, error) {
+	if msg == "" {
+		return model.PublicUserProfile{}, model.ErrEmptyContent
+	}
 	err := s.user.UpdateProfile(ctx, msg)
 	if err != nil {
 		return model.PublicUserProfile{}, err
