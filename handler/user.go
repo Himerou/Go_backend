@@ -58,6 +58,10 @@ func UpdateProfile(service service.UpdateProfileService) http.HandlerFunc {
 				WriteError(w, err.Error(), http.StatusNotFound)
 				return
 			}
+			if errors.Is(err, model.ErrEmptyContent) {
+				WriteError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
 			return
 		}
@@ -85,6 +89,10 @@ func UpdatePassword(service service.UpdatePasswordService) http.HandlerFunc {
 				WriteError(w, err.Error(), http.StatusConflict)
 				return
 			}
+			if errors.Is(err, model.ErrEmptyContent) {
+				WriteError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
 			return
 		}
@@ -106,6 +114,10 @@ func UpdateUsername(service service.UpdateUsernameService) http.HandlerFunc {
 				WriteError(w, err.Error(), http.StatusConflict)
 				return
 			}
+			if errors.Is(err, model.ErrEmptyContent) {
+				WriteError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			WriteError(w, "内部错误", http.StatusInternalServerError)
 			return
 		}
@@ -121,7 +133,15 @@ func DeleteUser(service service.DeleteUserService) http.HandlerFunc {
 		err := service.DeleteUser(ctx)
 		if err != nil {
 			WriteError(w, "内部错误", http.StatusInternalServerError)
+			return
 		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_id",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			HttpOnly: true,
+		})
 		w.WriteHeader(http.StatusNoContent)
 	}
 }

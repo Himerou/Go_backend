@@ -1,21 +1,136 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo 任务管理</title>
+    <title>首页 - Todo 任务管理</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<h1>Todo 任务管理</h1>
+    <!-- 顶部导航栏 -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">✓ Todoist</a>
+            <div class="nav-links" id="navAuthLinks">
+                <!-- 由 JS 根据登录态动态渲染 -->
+                <a href="/login" class="btn btn-sm btn-outline">登录</a>
+                <a href="/register" class="btn btn-sm btn-primary">注册</a>
+            </div>
+        </div>
+    </header>
 
-<p>欢迎使用 Todo 任务管理系统！</p>
+    <!-- 主容器 -->
+    <main class="main-container">
 
-<nav>
-    <a href="/login">登录</a>
-    <a href="/register">注册</a>
-</nav>
+        <!-- 未登录访客视图 -->
+        <section id="guestSection" hidden>
+            <div class="hero">
+                <h1>Todoist</h1>
+                <div class="btn-group" style="justify-content: center;">
+                    <a href="/register" class="btn btn-primary">注册账户开始使用</a>
+                    <a href="/login" class="btn btn-secondary">已有账号登录</a>
+                </div>
+            </div>
+
+            <!-- 公开资料查询卡片 -->
+            <div class="card" style="max-width: 580px; margin: 2rem auto 0;">
+                <div class="card-header">
+                    <h3 class="card-title">🔍 用户公开资料查询</h3>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    无需登录，输入用户名即可查看任意用户的公开主页与个人简介。
+                </p>
+                <form id="publicSearchForm" style="display: flex; gap: 0.5rem;">
+                    <input class="form-input" type="text" id="searchUsername" placeholder="输入用户名，如 testuser" required>
+                    <button class="btn btn-primary" type="submit">查询</button>
+                </form>
+
+                <div id="publicSearchResult" style="margin-top: 1.25rem;" hidden></div>
+            </div>
+        </section>
+
+        <!-- 已登录用户主工作台视图 -->
+        <section id="userSection" hidden>
+            <div class="grid-2">
+                <!-- 左侧：新建任务 -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">＋ 添加新任务</h3>
+                        </div>
+                        <form id="createTodoForm">
+                            <div class="form-group">
+                                <label class="form-label" for="newTodoTitle">任务标题 <span style="color:var(--danger)">*</span></label>
+                                <input class="form-input" type="text" id="newTodoTitle" placeholder="例如：编写系统单元测试" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="newTodoContent">详细描述 (选填)</label>
+                                <textarea class="form-textarea" id="newTodoContent" rows="3" placeholder="补充任务说明、关键步骤或备注..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" id="createTodoBtn">创建待办</button>
+                        </form>
+                    </div>
+
+                    <!-- 快捷个人信息微卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">👤 快捷中心</h3>
+                            <a href="/profile" class="btn btn-sm btn-outline">进入个人主页</a>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">当前账户</span>
+                            <span class="profile-val" id="currentUserDisplay">-</span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">注册时间</span>
+                            <span class="profile-val" id="currentUserCreatedAt">-</span>
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <a href="/profile" class="btn btn-sm btn-secondary" style="flex:1;">修改资料/密码</a>
+                            <button type="button" class="btn btn-sm btn-danger-outline" id="quickLogoutBtn">退出登录</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：任务管理列表 -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📋 我的待办清单</h3>
+                            <button type="button" class="btn btn-sm btn-outline" id="refreshTodosBtn">刷新</button>
+                        </div>
+
+                        <!-- 任务统计 -->
+                        <div class="todo-stats">
+                            <span>全部：<strong id="statTotal">0</strong></span>
+                            <span>进行中：<strong id="statActive">0</strong></span>
+                            <span>已完成：<strong id="statCompleted">0</strong></span>
+                        </div>
+
+                        <!-- 筛选与搜索 -->
+                        <div class="filter-tabs">
+                            <button type="button" class="tab-btn active" data-filter="all">全部</button>
+                            <button type="button" class="tab-btn" data-filter="active">未完成</button>
+                            <button type="button" class="tab-btn" data-filter="completed">已完成</button>
+                        </div>
+
+                        <!-- 任务列表容器 -->
+                        <ul class="todo-list" id="todoList">
+                            <!-- 动态渲染 -->
+                        </ul>
+
+                        <!-- 空提示 -->
+                        <div id="todoEmpty" class="empty-state" hidden>
+                            <p>暂无相关任务，保持充实生活！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/index.js"></script>
 </body>
-<script src="/static/js/toast.js" defer></script>
 </html>

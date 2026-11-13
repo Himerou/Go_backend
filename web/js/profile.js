@@ -1,514 +1,537 @@
-// ==================== 个人资料页 ====================
-const profileLoading = document.querySelector("#profileLoading");
-const profileContent = document.querySelector("#profileContent");
-const profileError = document.querySelector("#profileError");
-const profileMessage = document.querySelector("#profileMessage");
+// 个人中心逻辑
+let profileData = null;
+let profileTodos = [];
+let profileCurrentFilter = "all";
 
-const profileForm = document.querySelector("#profileForm");
-const profileText = document.querySelector("#profileText");
-const profileDisplay = document.querySelector("#profileDisplay");
-const editProfileBtn = document.querySelector("#editProfileBtn");
-const cancelProfileBtn = document.querySelector("#cancelProfileBtn");
+document.addEventListener("DOMContentLoaded", async () => {
+    // 绑定退出登录
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) logoutBtn.onclick = doLogout;
 
-const profileId = document.querySelector("#profileId");
-const profileUsername = document.querySelector("#profileUsername");
-const profileCreatedAt = document.querySelector("#profileCreatedAt");
+    // 加载个人资料
+    await loadUserProfile();
 
-const editUsernameBtn = document.querySelector("#editUsernameBtn");
-const editPasswordBtn = document.querySelector("#editPasswordBtn");
-const logoutBtn = document.querySelector("#logoutBtn");
+    // 绑定修改用户名
+    initEditUsername();
 
-let currentProfile = "";
+    // 绑定修改简介
+    initEditBio();
 
-// 优先使用公共 Toast；如果 Toast 尚未加载，则退回页面内提示区域。
-function notify(type, title, message) {
-    if (typeof window.showToast === "function") {
-        window.showToast({ title, message, type });
-        return;
+    // 绑定修改密码
+    initEditPassword();
+
+    // 绑定注销账户
+    initDeleteAccount();
+
+    // 绑定查询他人公开资料
+    initPublicSearch();
+
+    // 绑定个人中心 Todo 任务管理
+    initProfileTodos();
+});
+
+/**
+ * 加载个人资料
+ */
+async function loadUserProfile() {
+    const loadingEl = document.getElementById("profileLoading");
+    const contentEl = document.getElementById("profileContent");
+
+    try {
+        const res = await request("/api/profile");
+        profileData = await res.json();
+
+        document.getElementById("profileId").textContent = profileData.id;
+        document.getElementById("profileUsername").textContent = profileData.username;
+        document.getElementById("profileCreatedAt").textContent = formatDate(profileData.created_at);
+
+        renderBioDisplay(profileData.profile);
+
+        loadingEl.hidden = true;
+        contentEl.hidden = false;
+    } catch (err) {
+        toast("获取个人资料失败: " + err.message, "error");
+        if (err.status === 401) {
+            setTimeout(() => {
+                window.location.href = "/?error=unauthorized";
+            }, 800);
+        }
     }
+}
 
-    console.warn("Toast 组件不可用，使用页面内提示：", title, message);
-
-    if (type === "error") {
-        profileError.textContent = `${title}：${message}`;
-        profileError.hidden = false;
-        profileMessage.hidden = true;
+/**
+ * 渲染个人简介展示
+ */
+function renderBioDisplay(bio) {
+    const displayEl = document.getElementById("profileDisplay");
+    if (!bio || !bio.trim()) {
+        displayEl.innerHTML = '<span class="profile-empty-text">这个人很懒，什么都没留下...</span>';
     } else {
-        profileMessage.textContent = `${title}：${message}`;
-        profileMessage.hidden = false;
-        profileError.hidden = true;
+        displayEl.textContent = bio;
     }
 }
 
-// 清除页面内提示信息
-function clearMessage() {
-    profileError.hidden = true;
-    profileMessage.hidden = true;
+/**
+ * 修改个人简介
+ */
+function initEditBio() {
+    const openBtn = document.getElementById("openEditBioBtn");
+    const bioForm = document.getElementById("bioForm");
+    const bioInput = document.getElementById("bioInput");
+    const cancelBtn = document.getElementById("cancelBioBtn");
+    const displayEl = document.getElementById("profileDisplay");
+    const saveBtn = document.getElementById("saveBioBtn");
+
+    openBtn.onclick = () => {
+        bioInput.value = profileData.profile || "";
+        displayEl.hidden = true;
+        openBtn.hidden = true;
+        bioForm.hidden = false;
+        bioInput.focus();
+    };
+
+    cancelBtn.onclick = () => {
+        bioForm.hidden = true;
+        displayEl.hidden = false;
+        openBtn.hidden = false;
+    };
+
+    bioForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const newBio = bioInput.value.trim();
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = "保存中...";
+
+        try {
+            const res = await request("/api/profile", {
+                method: "PUT",
+                body: JSON.stringify({ msg: newBio })
+            });
+            const updated = await res.json();
+            profileData.profile = updated.profile;
+            renderBioDisplay(profileData.profile);
+
+            bioForm.hidden = true;
+            displayEl.hidden = false;
+            openBtn.hidden = false;
+            toast("个人简介已更新", "success");
+        } catch (err) {
+            toast("更新简介失败: " + err.message, "error");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "保存简介";
+        }
+    };
 }
 
-// 展示简介：为空时显示浅色提示，不展示空白文本框。
-function renderProfile(profile) {
-    currentProfile = profile || "";
+/**
+ * 修改用户名
+ */
+function initEditUsername() {
+    const btn = document.getElementById("editUsernameBtn");
+    btn.onclick = () => {
+        showModal({
+            title: "修改用户名",
+            bodyHtml: `
+                <div class="form-group">
+                    <label class="form-label" for="newUsernameInput">新用户名</label>
+                    <input class="form-input" type="text" id="newUsernameInput" value="${escapeHtml(profileData.username)}" required>
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.4rem;">用户名用于登录，不可与其他用户重复。</div>
+                </div>
+            `,
+            confirmText: "确认修改",
+            onConfirm: async (modalEl) => {
+                const newUsername = modalEl.querySelector("#newUsernameInput").value.trim();
+                if (!newUsername) {
+                    toast("用户名不能为空", "warning");
+                    return false;
+                }
+                if (newUsername === profileData.username) {
+                    toast("新用户名与当前用户名相同", "info");
+                    return false;
+                }
 
-    if (currentProfile.trim() === "") {
-        profileDisplay.className = "profile-empty";
-        profileDisplay.textContent = "这个人很懒，什么都没写";
-    } else {
-        profileDisplay.className = "profile-text-display";
-        profileDisplay.textContent = currentProfile;
-    }
+                try {
+                    const res = await request("/api/username", {
+                        method: "PUT",
+                        body: JSON.stringify({ msg: newUsername })
+                    });
+                    const updated = await res.json();
+                    profileData.username = updated.username;
+                    document.getElementById("profileUsername").textContent = updated.username;
+                    toast("用户名修改成功", "success");
+                    return true;
+                } catch (err) {
+                    toast("修改失败: " + err.message, "error");
+                    return false;
+                }
+            }
+        });
+    };
 }
 
-// 加载当前登录用户的个人资料
-async function loadProfile() {
-    profileLoading.hidden = false;
-    profileContent.hidden = true;
-    clearMessage();
+/**
+ * 修改密码
+ */
+function initEditPassword() {
+    const btn = document.getElementById("editPasswordBtn");
+    btn.onclick = () => {
+        showModal({
+            title: "修改密码",
+            bodyHtml: `
+                <div class="form-group">
+                    <label class="form-label" for="newPwdInput">新密码</label>
+                    <input class="form-input" type="password" id="newPwdInput" placeholder="请输入新密码" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirmPwdInput">确认新密码</label>
+                    <input class="form-input" type="password" id="confirmPwdInput" placeholder="请再次输入新密码" required autocomplete="new-password">
+                </div>
+            `,
+            confirmText: "确认修改",
+            onConfirm: async (modalEl) => {
+                const newPwd = modalEl.querySelector("#newPwdInput").value;
+                const confirmPwd = modalEl.querySelector("#confirmPwdInput").value;
 
-    try {
-        const response = await request("/api/profile");
-        const data = await response.json();
+                if (!newPwd) {
+                    toast("新密码不能为空", "warning");
+                    return false;
+                }
+                if (newPwd !== confirmPwd) {
+                    toast("两次输入的密码不一致", "warning");
+                    return false;
+                }
 
-        profileId.textContent = data.id;
-        profileUsername.textContent = data.username;
-        profileText.value = data.profile || "";
-
-        // 根据简介内容更新展示区域
-        renderProfile(data.profile);
-
-        profileCreatedAt.textContent = data.created_at
-            ? new Date(data.created_at).toLocaleString()
-            : "暂无";
-
-        // 加载完成后回到只读展示状态
-        profileForm.hidden = true;
-        profileDisplay.hidden = false;
-        editProfileBtn.hidden = false;
-        profileContent.hidden = false;
-    } catch (error) {
-        console.error("获取个人资料失败：", error);
-        notify("error", "获取个人资料失败", error.message || "请稍后重试");
-    } finally {
-        profileLoading.hidden = true;
-    }
+                try {
+                    await request("/api/password", {
+                        method: "PUT",
+                        body: JSON.stringify({ msg: newPwd })
+                    });
+                    toast("密码修改成功，请牢记您的新密码", "success");
+                    return true;
+                } catch (err) {
+                    toast("修改密码失败: " + err.message, "error");
+                    return false;
+                }
+            }
+        });
+    };
 }
 
-// 点击“编辑简介”后才显示文本框
-editProfileBtn.addEventListener("click", () => {
-    profileText.value = currentProfile;
-
-    profileDisplay.hidden = true;
-    editProfileBtn.hidden = true;
-    profileForm.hidden = false;
-
-    profileText.focus();
-});
-
-// 取消编辑，不向后端发送请求
-cancelProfileBtn.addEventListener("click", () => {
-    profileText.value = currentProfile;
-
-    profileForm.hidden = true;
-    profileDisplay.hidden = false;
-    editProfileBtn.hidden = false;
-});
-
-// 修改个人简介：只绑定一次 submit 事件，避免重复请求
-profileForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const profile = profileText.value.trim();
-    const saveBtn = profileForm.querySelector('button[type="submit"]');
-
-    clearMessage();
-    saveBtn.disabled = true;
-
-    try {
-        await request("/api/profile", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                msg: profile
-            })
+/**
+ * 注销账户
+ */
+function initDeleteAccount() {
+    const btn = document.getElementById("deleteAccountBtn");
+    btn.onclick = () => {
+        showModal({
+            title: "注销账户确认",
+            bodyHtml: `
+                <p style="color:var(--danger); font-weight:600; margin-bottom:0.5rem;">此操作不可逆！</p>
+                <p>注销后，您的账号以及该账号下的所有待办任务将全部被永久删除，无法找回。</p>
+            `,
+            confirmText: "确认注销",
+            cancelText: "考虑一下",
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    await request("/api/user", { method: "DELETE" });
+                    toast("账户已成功注销", "info");
+                    setTimeout(() => {
+                        window.location.href = "/";
+                    }, 500);
+                    return true;
+                } catch (err) {
+                    toast("注销失败: " + err.message, "error");
+                    return false;
+                }
+            }
         });
+    };
+}
 
-        // 保存成功后更新页面展示
-        renderProfile(profile);
+/**
+ * 查询他人公开资料
+ */
+function initPublicSearch() {
+    const form = document.getElementById("publicSearchForm");
+    const input = document.getElementById("searchUsername");
+    const resultBox = document.getElementById("publicSearchResult");
 
-        profileForm.hidden = true;
-        profileDisplay.hidden = false;
-        editProfileBtn.hidden = false;
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = input.value.trim();
+        if (!name) return;
 
-        notify("success", "保存成功", "个人简介已更新");
-    } catch (error) {
-        console.error("修改个人简介失败：", error);
-        notify("error", "保存失败", error.message || "请稍后重试");
-    } finally {
-        saveBtn.disabled = false;
-    }
-});
+        resultBox.hidden = false;
+        resultBox.innerHTML = `<p style="color:var(--text-muted);font-size:0.9rem;">正在查询...</p>`;
 
-// 修改用户名
-editUsernameBtn.addEventListener("click", async () => {
-    const newUsername = prompt(
-        "请输入新的用户名：",
-        profileUsername.textContent
-    );
+        try {
+            const res = await request(`/api/users/${encodeURIComponent(name)}/profile`);
+            const data = await res.json();
+            resultBox.innerHTML = `
+                <div style="background:var(--bg-page); border:1px solid var(--border); border-radius:var(--radius-md); padding:0.85rem;">
+                    <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.25rem;">
+                        ${escapeHtml(data.username)}
+                        <span class="badge badge-secondary" style="margin-left:0.4rem;">UID: ${data.id}</span>
+                    </div>
+                    <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.4rem;">
+                        注册时间：${formatDate(data.created_at)}
+                    </div>
+                    <div style="font-size:0.88rem; color:var(--text-main); white-space:pre-wrap;">
+                        ${escapeHtml(data.profile || "（该用户暂未填写个人简介）")}
+                    </div>
+                </div>
+            `;
+        } catch (_) {
+            resultBox.innerHTML = `
+                <div style="color:var(--danger); font-size:0.88rem;">
+                    未找到用户 "${escapeHtml(name)}"
+                </div>
+            `;
+        }
+    };
+}
 
-    if (newUsername === null) {
-        return;
-    }
-
-    const username = newUsername.trim();
-
-    if (!username) {
-        notify("error", "修改失败", "用户名不能为空");
-        return;
-    }
-
-    if (username === profileUsername.textContent) {
-        notify("info", "无需修改", "用户名没有变化");
-        return;
-    }
-
-    clearMessage();
-    editUsernameBtn.disabled = true;
-
-    try {
-        await request("/api/username", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                msg: username
-            })
+/**
+ * 个人中心 Todo 任务管理
+ */
+function initProfileTodos() {
+    // 筛选 Tab
+    const tabBtns = document.querySelectorAll(".filter-tabs [data-pfilter]");
+    tabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tabBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            profileCurrentFilter = btn.dataset.pfilter;
+            renderProfileTodoList();
         });
+    });
 
-        // 重新获取资料，避免页面显示与后端不一致
-        await loadProfile();
+    // 刷新
+    const refreshBtn = document.getElementById("profileRefreshTodosBtn");
+    if (refreshBtn) refreshBtn.onclick = fetchProfileTodos;
 
-        notify("success", "修改成功", "用户名已更新");
-    } catch (error) {
-        console.error("修改用户名失败：", error);
-        notify("error", "修改用户名失败", error.message || "请稍后重试");
-    } finally {
-        editUsernameBtn.disabled = false;
-    }
-});
+    // 创建任务
+    const form = document.getElementById("profileTodoForm");
+    const titleIn = document.getElementById("profileTodoTitle");
+    const contentIn = document.getElementById("profileTodoContent");
+    const btn = document.getElementById("profileCreateTodoBtn");
 
-// 修改密码：操作状态使用 Toast，不使用 alert
-editPasswordBtn.addEventListener("click", async () => {
-    const newPassword = prompt("请输入新密码：");
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const title = titleIn.value.trim();
+        const content = contentIn.value.trim();
 
-    if (newPassword === null) {
-        return;
-    }
-
-    if (!newPassword.trim()) {
-        notify("error", "修改失败", "密码不能为空");
-        return;
-    }
-
-    const confirmPassword = prompt("请再次输入新密码：");
-
-    if (confirmPassword === null) {
-        return;
-    }
-
-    if (newPassword !== confirmPassword) {
-        notify("error", "修改失败", "两次输入的密码不一致");
-        return;
-    }
-
-    editPasswordBtn.disabled = true;
-
-    try {
-        await request("/api/password", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                msg: newPassword
-            })
-        });
-
-        notify("success", "修改成功", "密码已更新");
-    } catch (error) {
-        console.error("修改密码失败：", error);
-        notify("error", "修改密码失败", error.message || "请稍后重试");
-    } finally {
-        editPasswordBtn.disabled = false;
-    }
-});
-
-// 退出登录：保留操作前确认，结果提示使用 Toast
-logoutBtn.addEventListener("click", async () => {
-    if (!confirm("确定要退出登录吗？")) {
-        return;
-    }
-
-    logoutBtn.disabled = true;
-
-    try {
-        await request("/api/logout", {
-            method: "POST"
-        });
-
-        notify("success", "退出成功", "即将返回首页");
-        window.location.href = "/";
-    } catch (error) {
-        console.error("退出登录失败：", error);
-        notify("error", "退出登录失败", error.message || "请稍后重试");
-        logoutBtn.disabled = false;
-    }
-});
-
-// 页面加载后获取资料
-loadProfile();
-
-// ==================== Todo 列表 ====================
-
-const deleteDialog = document.querySelector("#deleteDialog");
-const deleteMessage = document.querySelector("#deleteMessage");
-const cancelDeleteBtn = document.querySelector("#cancelDeleteBtn");
-const confirmDeleteBtn = document.querySelector("#confirmDeleteBtn");
-
-// 暂存当前准备删除的任务 ID
-let pendingDeleteId = null;
-
-async function loadTodos() {
-    const todoList = document.querySelector("#todoList");
-
-    try {
-        const response = await request("/api/todos");
-        const todos = await response.json();
-
-        todoList.replaceChildren();
-
-        if (todos === null || todos.length === 0) {
-            todoList.textContent = "目前没有任务";
+        if (!title) {
+            toast("任务标题不能为空", "warning");
             return;
         }
 
-        for (const todo of todos) {
-            const li = document.createElement("li");
-            li.className = "todo-item";
-            li.dataset.id = todo.id;
+        btn.disabled = true;
+        btn.textContent = "创建中...";
 
-            const title = document.createElement("h3");
-            title.textContent = todo.title;
+        try {
+            await request("/api/todos", {
+                method: "POST",
+                body: JSON.stringify({ title, content, completed: false })
+            });
+            toast("任务创建成功", "success");
+            titleIn.value = "";
+            contentIn.value = "";
+            fetchProfileTodos();
+        } catch (err) {
+            toast(err.message || "创建任务失败", "error");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "立即创建";
+        }
+    };
 
-            const content = document.createElement("p");
-            content.textContent = todo.content || "暂无详细内容";
+    fetchProfileTodos();
+}
 
-            const status = document.createElement("p");
-            status.textContent = todo.completed
-                ? "状态：已完成"
-                : "状态：未完成";
+/**
+ * 获取 Todo 列表
+ */
+async function fetchProfileTodos() {
+    try {
+        const res = await request("/api/todos");
+        profileTodos = await res.json() || [];
+        updateProfileStats();
+        renderProfileTodoList();
+    } catch (err) {
+        toast("获取任务失败: " + err.message, "error");
+    }
+}
 
-            const createdAt = document.createElement("p");
-            createdAt.textContent =
-                `创建时间：${new Date(todo.created_at).toLocaleString()}`;
+/**
+ * 更新统计指标
+ */
+function updateProfileStats() {
+    const total = profileTodos.length;
+    const completed = profileTodos.filter(t => t.completed).length;
+    const active = total - completed;
 
-            const updatedAt = document.createElement("p");
-            updatedAt.textContent =
-                `更新时间：${new Date(todo.updated_at).toLocaleString()}`;
+    const elTotal = document.getElementById("pStatTotal");
+    const elActive = document.getElementById("pStatActive");
+    const elCompleted = document.getElementById("pStatCompleted");
 
-            // 创建操作按钮容器
-            const actions = document.createElement("div");
-            actions.className = "todo-actions";
+    if (elTotal) elTotal.textContent = total;
+    if (elActive) elActive.textContent = active;
+    if (elCompleted) elCompleted.textContent = completed;
+}
 
-            const editBtn = document.createElement("button");
-            editBtn.type = "button";
-            editBtn.textContent = "编辑";
-            editBtn.className = "edit-btn";
+/**
+ * 渲染 Todo 列表
+ */
+function renderProfileTodoList() {
+    const listEl = document.getElementById("profileTodoList");
+    const emptyEl = document.getElementById("profileTodoEmpty");
+    if (!listEl) return;
 
-            editBtn.addEventListener("click", () => {
-                // 创建标题输入框
-                const titleInput = document.createElement("input");
-                titleInput.type = "text";
-                titleInput.value = todo.title;
-                titleInput.name = "title";
-                titleInput.required = true;
+    listEl.innerHTML = "";
 
-                // 创建内容输入框
-                const contentInput = document.createElement("textarea");
-                contentInput.value = todo.content || "";
-                contentInput.name = "content";
+    let filtered = profileTodos;
+    if (profileCurrentFilter === "active") {
+        filtered = profileTodos.filter(t => !t.completed);
+    } else if (profileCurrentFilter === "completed") {
+        filtered = profileTodos.filter(t => t.completed);
+    }
 
-                // 创建完成状态复选框
-                const completedInput = document.createElement("input");
-                completedInput.type = "checkbox";
-                completedInput.checked = todo.completed;
-                completedInput.name = "completed";
+    if (filtered.length === 0) {
+        if (emptyEl) emptyEl.hidden = false;
+        return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
 
-                // 创建保存按钮
-                const saveBtn = document.createElement("button");
-                saveBtn.type = "button";
-                saveBtn.textContent = "保存";
+    filtered.forEach(todo => {
+        const li = document.createElement("li");
+        li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+        li.dataset.id = todo.id;
 
-                // 创建取消按钮
-                const cancelBtn = document.createElement("button");
-                cancelBtn.type = "button";
-                cancelBtn.textContent = "取消";
+        li.innerHTML = `
+            <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} title="切换状态">
+            <div class="todo-body">
+                <div class="todo-title">${escapeHtml(todo.title)}</div>
+                ${todo.content ? `<div class="todo-desc">${escapeHtml(todo.content)}</div>` : ''}
+                <div class="todo-meta">
+                    <span>${todo.completed ? '<span class="badge badge-success">已完成</span>' : '<span class="badge badge-warning">未完成</span>'}</span>
+                    <span>更新于: ${formatDate(todo.updated_at || todo.created_at)}</span>
+                </div>
+            </div>
+            <div class="todo-actions">
+                <button type="button" class="btn btn-sm btn-outline edit-btn">编辑</button>
+                <button type="button" class="btn btn-sm btn-danger-outline delete-btn">删除</button>
+            </div>
+        `;
 
-                // 替换原来的显示内容
-                title.replaceWith(titleInput);
-                content.replaceWith(contentInput);
-                status.replaceWith(completedInput);
-
-                // 隐藏编辑按钮，并添加保存、取消按钮
-                editBtn.hidden = true;
-                actions.append(saveBtn, cancelBtn);
-
-                // 点击取消：恢复原来的显示
-                cancelBtn.addEventListener("click", () => {
-                    titleInput.replaceWith(title);
-                    contentInput.replaceWith(content);
-                    completedInput.replaceWith(status);
-
-                    saveBtn.remove();
-                    cancelBtn.remove();
-                    editBtn.hidden = false;
+        // 切换完成状态
+        const cb = li.querySelector(".todo-checkbox");
+        cb.onchange = async () => {
+            try {
+                await request(`/api/todos/${todo.id}`, {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        title: todo.title,
+                        content: todo.content,
+                        completed: cb.checked
+                    })
                 });
+                todo.completed = cb.checked;
+                updateProfileStats();
+                renderProfileTodoList();
+                toast(cb.checked ? "任务已完成" : "任务恢复为未完成", "info", 1500);
+            } catch (err) {
+                toast("更新失败: " + err.message, "error");
+                fetchProfileTodos();
+            }
+        };
 
-                // 保存修改
-                saveBtn.addEventListener("click", async () => {
-                    const newTitle = titleInput.value.trim();
-                    const newContent = contentInput.value.trim();
-                    const newCompleted = completedInput.checked;
+        // 编辑
+        li.querySelector(".edit-btn").onclick = () => {
+            showModal({
+                title: "编辑任务",
+                bodyHtml: `
+                    <div class="form-group">
+                        <label class="form-label" for="modalTodoTitle">任务标题</label>
+                        <input class="form-input" type="text" id="modalTodoTitle" value="${escapeHtml(todo.title)}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="modalTodoContent">任务描述</label>
+                        <textarea class="form-textarea" id="modalTodoContent" rows="3">${escapeHtml(todo.content || "")}</textarea>
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem;">
+                        <input type="checkbox" id="modalTodoCompleted" ${todo.completed ? 'checked' : ''} style="width:1.1rem; height:1.1rem;">
+                        <label for="modalTodoCompleted" style="cursor:pointer; font-size:0.9rem;">标记为已完成</label>
+                    </div>
+                `,
+                confirmText: "保存更改",
+                onConfirm: async (modalEl) => {
+                    const newTitle = modalEl.querySelector("#modalTodoTitle").value.trim();
+                    const newContent = modalEl.querySelector("#modalTodoContent").value.trim();
+                    const newCompleted = modalEl.querySelector("#modalTodoCompleted").checked;
 
                     if (!newTitle) {
-                        alert("任务标题不能为空");
-                        return;
+                        toast("任务标题不能为空", "warning");
+                        return false;
                     }
-
-                    saveBtn.disabled = true;
 
                     try {
                         await request(`/api/todos/${todo.id}`, {
                             method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
                             body: JSON.stringify({
                                 title: newTitle,
                                 content: newContent,
                                 completed: newCompleted
                             })
                         });
-
-                        // 保存成功后重新加载任务列表
-                        await loadTodos();
-                    } catch (error) {
-                        console.error("更新 Todo 失败：", error);
-                        alert(`保存失败：${error.message}`);
-                        saveBtn.disabled = false;
+                        toast("任务更新成功", "success");
+                        fetchProfileTodos();
+                        return true;
+                    } catch (err) {
+                        toast("更新失败: " + err.message, "error");
+                        return false;
                     }
-                });
+                }
             });
+        };
 
-            const deleteBtn = document.createElement("button");
-            deleteBtn.type = "button";
-            deleteBtn.textContent = "删除";
-            deleteBtn.className = "delete-btn";
-
-            deleteBtn.addEventListener("click", () => {
-                // 记录准备删除的任务
-                pendingDeleteId = todo.id;
-
-                // 显示具体任务名称
-                deleteMessage.textContent =
-                    `确定要删除任务「${todo.title}」吗？此操作无法撤销。`;
-
-                // 显示弹窗
-                deleteDialog.hidden = false;
+        // 删除
+        li.querySelector(".delete-btn").onclick = () => {
+            showModal({
+                title: "删除任务",
+                bodyHtml: `<p>确定要删除任务「<strong>${escapeHtml(todo.title)}</strong>」吗？</p>`,
+                confirmText: "确认删除",
+                isDanger: true,
+                onConfirm: async () => {
+                    try {
+                        await request(`/api/todos/${todo.id}`, { method: "DELETE" });
+                        toast("任务已删除", "success");
+                        fetchProfileTodos();
+                        return true;
+                    } catch (err) {
+                        toast("删除失败: " + err.message, "error");
+                        return false;
+                    }
+                }
             });
+        };
 
-            actions.append(editBtn, deleteBtn);
-            li.append(title, content, status, createdAt, updatedAt, actions);
-            todoList.appendChild(li);
-        }
-    } catch (error) {
-        console.error("获取 Todo 失败：", error);
-        todoList.textContent = error.message;
-    }
+        listEl.appendChild(li);
+    });
 }
 
-// 点击按钮重新加载任务
-document.querySelector("#loadBtn").addEventListener("click", loadTodos);
-
-// 创建 Todo
-const todoForm = document.querySelector("#todoForm");
-const todoResult = document.querySelector("#todoResult");
-
-todoForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const title = document.querySelector("#todoTitle").value.trim();
-    const content = document.querySelector("#todoContent").value.trim();
-
-    todoResult.textContent = "正在创建任务……";
-
-    try {
-        await request("/api/todos", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                title: title,
-                content: content
-            })
-        });
-
-        todoResult.textContent = "创建成功！";
-        todoForm.reset();
-
-        await loadTodos();
-    } catch (error) {
-        console.error("创建任务失败：", error);
-        todoResult.textContent = `创建失败：${error.message}`;
-    }
-});
-
-// 页面加载后获取任务列表
-loadTodos();
-
-// 取消删除
-cancelDeleteBtn.addEventListener("click", () => {
-    // 关闭弹窗，不删除任务
-    deleteDialog.hidden = true;
-    pendingDeleteId = null;
-});
-
-// 确认删除
-confirmDeleteBtn.addEventListener("click", async () => {
-    // 没有选中任务，就不执行删除
-    if (pendingDeleteId === null) {
-        return;
-    }
-
-    confirmDeleteBtn.disabled = true;
-
-    try {
-        await request(`/api/todos/${pendingDeleteId}`, {
-            method: "DELETE"
-        });
-
-        // 删除成功，关闭弹窗并刷新列表
-        deleteDialog.hidden = true;
-        pendingDeleteId = null;
-
-        await loadTodos();
-    } catch (error) {
-        console.error("删除 Todo 失败：", error);
-        alert(`删除失败：${error.message}`);
-    } finally {
-        confirmDeleteBtn.disabled = false;
-    }
-});
+/**
+ * HTML 转义
+ */
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}

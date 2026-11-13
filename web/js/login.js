@@ -1,31 +1,34 @@
+// 登录逻辑
+const loginForm = document.getElementById("loginForm");
+const submitBtn = document.getElementById("submitBtn");
 
-const loginForm = document.querySelector("#loginForm");
-const result = document.querySelector("#result");
+loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
 
-    const username = document.querySelector("#username").value.trim();
-    const password = document.querySelector("#password").value;
+    if (!username || !password) {
+        toast("用户名和密码不能为空", "warning");
+        return;
+    }
 
-    result.textContent = "正在登录……";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "登录中...";
 
     try {
-        const response = await request("/api/login", {
+        await request("/api/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password
-            })
+            body: JSON.stringify({ username, password })
         });
 
-        result.textContent = "登录成功！";
-        window.location.href = "/profile";
-    } catch (error) {
-        console.error("登录错误：", error);
-        result.textContent = error.message;
+        toast("登录成功，正在进入...", "success");
+        setTimeout(() => {
+            window.location.href = "/profile";
+        }, 350);
+    } catch (err) {
+        toast(err.message || "登录失败，请检查用户名或密码", "error");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "登录";
     }
 });

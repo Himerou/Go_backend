@@ -54,12 +54,12 @@ func Middleware(s service.SessionRepository) func(http.Handler) http.HandlerFunc
 func LoginTodo(service service.LoginService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		var reqdata model.LoginAndRegisterRequest
-		if err := json.NewDecoder(req.Body).Decode(&reqdata); err != nil {
+		var reqData model.LoginAndRegisterRequest
+		if err := json.NewDecoder(req.Body).Decode(&reqData); err != nil {
 			WriteError(w, "格式错误", http.StatusBadRequest)
 			return
 		}
-		user, session, err := service.Login(ctx, reqdata.Username, reqdata.Password)
+		user, session, err := service.Login(ctx, reqData.Username, reqData.Password)
 		if err != nil {
 			switch {
 			case errors.Is(err, model.ErrEmptyUsername):
@@ -93,12 +93,12 @@ func LoginTodo(service service.LoginService) http.HandlerFunc {
 func RegisterTodo(service service.RegisterService) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		var reqdata model.LoginAndRegisterRequest
-		if err := json.NewDecoder(req.Body).Decode(&reqdata); err != nil {
+		var reqData model.LoginAndRegisterRequest
+		if err := json.NewDecoder(req.Body).Decode(&reqData); err != nil {
 			WriteError(w, "请求错误", http.StatusBadRequest)
 			return
 		}
-		user, session, err := service.Register(ctx, reqdata.Username, reqdata.Password)
+		user, session, err := service.Register(ctx, reqData.Username, reqData.Password)
 		if err != nil {
 			switch {
 			case errors.Is(err, model.ErrEmptyUsername):

@@ -1,31 +1,45 @@
+// 注册逻辑
+const registerForm = document.getElementById("registerForm");
+const submitBtn = document.getElementById("submitBtn");
 
-const registerForm = document.querySelector("#registerForm");
-const result = document.querySelector("#result");
+registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-registerForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
 
-    const username = document.querySelector("#username").value.trim();
-    const password = document.querySelector("#password").value;
+    if (!username) {
+        toast("请输入用户名", "warning");
+        return;
+    }
 
-    result.textContent = "正在注册……";
+    if (!password) {
+        toast("请输入密码", "warning");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        toast("两次输入的密码不一致", "warning");
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "注册中...";
 
     try {
         await request("/api/register", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password
-            })
+            body: JSON.stringify({ username, password })
         });
 
-        result.textContent = "注册成功！正在跳转登录页……";
-        window.location.href = "/profile";
-    } catch (error) {
-        console.error("注册错误：", error);
-        result.textContent = error.message;
+        toast("注册成功，正在为您登录...", "success");
+        setTimeout(() => {
+            window.location.href = "/profile";
+        }, 350);
+    } catch (err) {
+        toast(err.message || "注册失败，请稍后重试", "error");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "注册账户";
     }
 });

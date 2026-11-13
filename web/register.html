@@ -3,42 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户注册</title>
+    <title>注册 - Todo 任务管理</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<h1>用户注册</h1>
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">✓ Todoist</a>
+            <div class="nav-links">
+                <a href="/" class="btn btn-sm btn-outline">返回首页</a>
+                <a href="/login" class="btn btn-sm btn-secondary">已有账号登录</a>
+            </div>
+        </div>
+    </header>
 
-<form id="registerForm">
-    <div>
-        <label for="username">用户名</label>
-        <input
-                type="text"
-                id="username"
-                name="username"
-                required
-        >
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <h1>创建新账户</h1>
+            <p class="auth-subtitle">开启高效、简洁的个人任务管理之旅</p>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">用户名</label>
+                    <input class="form-input" type="text" id="username" name="username" placeholder="请输入用户名" required autocomplete="username" autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">设置密码</label>
+                    <input class="form-input" type="password" id="password" name="password" placeholder="请输入密码" required autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">确认密码</label>
+                    <input class="form-input" type="password" id="confirmPassword" name="confirmPassword" placeholder="请再次输入密码" required autocomplete="new-password">
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button class="btn btn-primary btn-block" type="submit" id="submitBtn">注册账户</button>
+                </div>
+            </form>
+
+            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-muted);">
+                已经有账号？<a href="/login">直接登录</a>
+            </div>
+        </div>
     </div>
 
-    <div>
-        <label for="password">密码</label>
-        <input
-                type="password"
-                id="password"
-                name="password"
-                required
-        >
-    </div>
-
-    <button type="submit">注册</button>
-</form>
-
-<p id="result"></p>
-
-<p>已经有账号？<a href="/login">去登录</a></p>
-<p><a href="/">返回首页</a></p>
-
-<script src="/static/js/common.js"></script>
-<script src="/static/js/register.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/register.js"></script>
 </body>
 </html>

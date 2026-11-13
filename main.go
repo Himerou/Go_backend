@@ -14,9 +14,8 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("加载 .env 文件失败:", err)
+	if err := godotenv.Load(); err != nil {
+		log.Println("未加载 .env 文件，尝试使用系统环境变量")
 	}
 	dsn := os.Getenv("DSN")
 	if dsn == "" {

@@ -3,118 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人主页 - Todo</title>
+    <title>个人中心 - Todo 任务管理</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<h1>个人主页</h1>
+    <!-- 顶部导航栏 -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">✓ Todoist</a>
+            <div class="nav-links">
+                <a href="/" class="btn btn-sm btn-outline">返回首页</a>
+                <button type="button" class="btn btn-sm btn-secondary" id="logoutBtn">退出登录</button>
+            </div>
+        </div>
+    </header>
 
-<section class="profile-section">
-    <h2>个人资料</h2>
-
-    <p id="profileError" class="error-message" hidden></p>
-    <p id="profileMessage" class="success-message" hidden></p>
-
-    <div id="profileLoading">正在加载个人资料...</div>
-
-    <div id="profileContent" hidden>
-        <div class="profile-item">
-            <label>用户 ID</label>
-            <span id="profileId"></span>
+    <main class="main-container">
+        <!-- 加载状态 -->
+        <div id="profileLoading" style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+            正在加载个人信息...
         </div>
 
-        <div class="profile-item">
-            <label>用户名</label>
-            <span id="profileUsername"></span>
-            <button type="button" id="editUsernameBtn">修改用户名</button>
+        <div id="profileContent" hidden>
+            <div class="grid-2">
+                <!-- 左列：个人资料与账号管理 -->
+                <div>
+                    <!-- 基本资料卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">👤 基本资料</h3>
+                            <button type="button" class="btn btn-sm btn-outline" id="editUsernameBtn">修改用户名</button>
+                        </div>
+
+                        <div class="profile-row">
+                            <span class="profile-label">用户 ID</span>
+                            <span class="profile-val" id="profileId">-</span>
+                        </div>
+
+                        <div class="profile-row">
+                            <span class="profile-label">用户名</span>
+                            <span class="profile-val" id="profileUsername">-</span>
+                        </div>
+
+                        <div class="profile-row">
+                            <span class="profile-label">注册时间</span>
+                            <span class="profile-val" id="profileCreatedAt">-</span>
+                        </div>
+
+                        <div class="profile-row" style="align-items:flex-start;">
+                            <span class="profile-label" style="padding-top:0.3rem;">个人简介</span>
+                            <div class="profile-val">
+                                <div id="profileDisplay" style="white-space:pre-wrap; margin-bottom:0.6rem;"></div>
+                                <button type="button" class="btn btn-sm btn-secondary" id="openEditBioBtn">编辑简介</button>
+
+                                <!-- 编辑简介表单 -->
+                                <form id="bioForm" hidden style="margin-top:0.5rem;">
+                                    <textarea class="form-textarea" id="bioInput" rows="3" maxlength="500" placeholder="介绍一下你自己..."></textarea>
+                                    <div class="btn-group" style="margin-top:0.5rem;">
+                                        <button type="submit" class="btn btn-sm btn-primary" id="saveBioBtn">保存简介</button>
+                                        <button type="button" class="btn btn-sm btn-outline" id="cancelBioBtn">取消</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 账号与安全卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🔒 账号安全</h3>
+                        </div>
+                        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">
+                            定期更换高强度密码可增强您的账户安全性。
+                        </p>
+                        <button type="button" class="btn btn-outline btn-sm" id="editPasswordBtn">修改账户密码</button>
+                    </div>
+
+                    <!-- 查询其他用户公开资料 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🔍 查询他人公开主页</h3>
+                        </div>
+                        <form id="publicSearchForm" style="display:flex; gap:0.5rem;">
+                            <input class="form-input" type="text" id="searchUsername" placeholder="输入用户名" required>
+                            <button class="btn btn-primary btn-sm" type="submit">查询</button>
+                        </form>
+                        <div id="publicSearchResult" style="margin-top:1rem;" hidden></div>
+                    </div>
+
+                    <!-- 危险区域：注销账户 -->
+                    <div class="card danger-zone">
+                        <div class="card-header">
+                            <h3 class="card-title">⚠️ 危险操作</h3>
+                        </div>
+                        <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:1rem;">
+                            注销账户将永久清除您的所有用户数据和关联的所有 Todo 待办任务，此操作不可恢复。
+                        </p>
+                        <button type="button" class="btn btn-danger btn-sm" id="deleteAccountBtn">注销当前账户</button>
+                    </div>
+                </div>
+
+                <!-- 右列：任务快速查看与新建 -->
+                <div>
+                    <!-- 快速创建任务 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">＋ 快速新建任务</h3>
+                        </div>
+                        <form id="profileTodoForm">
+                            <div class="form-group">
+                                <label class="form-label" for="profileTodoTitle">任务标题 <span style="color:var(--danger)">*</span></label>
+                                <input class="form-input" type="text" id="profileTodoTitle" placeholder="输入待办事项" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="profileTodoContent">内容说明 (选填)</label>
+                                <textarea class="form-textarea" id="profileTodoContent" rows="2" placeholder="补充任务说明..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block btn-sm" id="profileCreateTodoBtn">立即创建</button>
+                        </form>
+                    </div>
+
+                    <!-- 任务列表 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📋 我的任务列表</h3>
+                            <button type="button" class="btn btn-sm btn-outline" id="profileRefreshTodosBtn">刷新</button>
+                        </div>
+
+                        <!-- 任务统计 -->
+                        <div class="todo-stats">
+                            <span>全部：<strong id="pStatTotal">0</strong></span>
+                            <span>未完成：<strong id="pStatActive">0</strong></span>
+                            <span>已完成：<strong id="pStatCompleted">0</strong></span>
+                        </div>
+
+                        <!-- 筛选 Tab -->
+                        <div class="filter-tabs">
+                            <button type="button" class="tab-btn active" data-pfilter="all">全部</button>
+                            <button type="button" class="tab-btn" data-pfilter="active">未完成</button>
+                            <button type="button" class="tab-btn" data-pfilter="completed">已完成</button>
+                        </div>
+
+                        <ul class="todo-list" id="profileTodoList"></ul>
+
+                        <div id="profileTodoEmpty" class="empty-state" hidden>
+                            <p>暂无任务记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </main>
 
-        <div class="profile-item">
-            <label>注册时间</label>
-            <span id="profileCreatedAt"></span>
-        </div>
-
-        <div class="profile-item">
-            <label>个人简介</label>
-
-            <!-- 默认展示简介，不直接展示编辑框 -->
-            <div id="profileDisplay"></div>
-
-            <button type="button" id="editProfileBtn">编辑简介</button>
-
-            <!-- 点击编辑后才显示 -->
-            <form id="profileForm" hidden>
-        <textarea
-                id="profileText"
-                name="profile"
-                rows="4"
-                maxlength="500"
-                placeholder="介绍一下自己..."
-        ></textarea>
-
-                <button type="submit">保存</button>
-                <button type="button" id="cancelProfileBtn">取消</button>
-            </form>
-        </div>
-
-        <hr>
-
-        <button type="button" id="editPasswordBtn">
-            修改密码
-        </button>
-
-        <button type="button" id="logoutBtn">
-            退出登录
-        </button>
-    </div>
-</section>
-
-<section>
-    <h2>创建任务</h2>
-    <form id="todoForm">
-        <div>
-            <label for="todoTitle">任务标题</label>
-            <input type="text" id="todoTitle" name="title" required>
-        </div>
-
-        <div>
-            <label for="todoContent">任务内容</label>
-            <textarea id="todoContent" name="content"></textarea>
-        </div>
-
-        <button type="submit">创建任务</button>
-    </form>
-    <p id="todoResult"></p>
-</section>
-
-<section>
-    <h2>我的任务</h2>
-    <button type="button" id="loadBtn">刷新任务</button>
-    <ul id="todoList"></ul>
-</section>
-
-<p id="pageResult"></p>
-
-<p><a href="/">返回首页</a></p>
-
-<!-- 删除确认弹窗 -->
-<div id="deleteDialog" class="dialog-backdrop" hidden>
-    <div class="dialog-box" role="dialog" aria-modal="true"
-         aria-labelledby="dialogTitle">
-        <h2 id="dialogTitle">删除任务</h2>
-        <p id="deleteMessage">确定要删除这条任务吗？此操作无法撤销。</p>
-
-        <div class="dialog-actions">
-            <button type="button" id="cancelDeleteBtn">取消</button>
-            <button type="button" id="confirmDeleteBtn" class="delete-btn">
-                确认删除
-            </button>
-        </div>
-    </div>
-</div>
-
-<script src="/static/js/common.js"></script>
-<script src="/static/js/toast.js"></script>
-<script src="/static/js/profile.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/profile.js"></script>
 </body>
 </html>
