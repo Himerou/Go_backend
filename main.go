@@ -8,8 +8,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
@@ -17,10 +18,28 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("未加载 .env 文件，尝试使用系统环境变量")
 	}
-	dsn := os.Getenv("DSN")
-	if dsn == "" {
-		log.Fatalln("DSN 变量未设置")
+
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("MYSQL_USER")
+	dbPassword := os.Getenv("MYSQL_PASSWORD")
+	dbName := os.Getenv("MYSQL_DATABASE")
+
+	if dbHost == "" || dbPort == "" || dbUser == "" ||
+		dbPassword == "" || dbName == "" {
+		log.Fatalln("数据库配置不完整")
 	}
+
+	cfg := mysql.NewConfig()
+	cfg.User = dbUser
+	cfg.Passwd = dbPassword
+	cfg.Net = "tcp"
+	cfg.Addr = dbHost + ":" + dbPort
+	cfg.DBName = dbName
+	cfg.ParseTime = true
+	cfg.Loc = time.Local
+
+	dsn := cfg.FormatDSN()
 
 	db, err := repository.OpenMySQL(dsn)
 	if err != nil {
