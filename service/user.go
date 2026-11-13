@@ -125,7 +125,7 @@ func (s *UserService) UpdatePassword(
 	ctx context.Context,
 	msg string) error {
 	if strings.TrimSpace(msg) == "" {
-		return model.ErrEmptyPassword
+		return model.ErrEmptyContent
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(msg), bcrypt.DefaultCost)
 	if err != nil {
