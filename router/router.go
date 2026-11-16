@@ -1,6 +1,7 @@
 package router
 
 import (
+	"GO_web/web"
 	"net/http"
 	"path/filepath"
 
@@ -34,7 +35,7 @@ func NewRouter(
 		"/static/",
 		http.StripPrefix(
 			"/static/",
-			http.FileServer(http.Dir("./web")),
+			http.FileServer(http.FS(web.Files)),
 		),
 	)
 	// 页面路由
