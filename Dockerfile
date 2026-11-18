@@ -21,8 +21,6 @@ WORKDIR /app
 RUN apk add --no-cache tzdata
 #从第一阶段编译的内容复制到第二阶段（未复制默认全部丢弃）
 COPY --from=builder /app/server .
-COPY --from=builder /app/web ./web
-COPY --from=builder /app/database ./database
 # 声称容器监听8080端口
 EXPOSE 8080
 # CMD 容器启动时执行的命令

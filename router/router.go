@@ -1,12 +1,10 @@
 package router
 
 import (
-	"GO_web/web"
-	"net/http"
-	"path/filepath"
-
 	"GO_web/handler"
 	"GO_web/service"
+	"GO_web/web"
+	"net/http"
 )
 
 func NewRouter(
@@ -40,10 +38,10 @@ func NewRouter(
 	)
 	// 页面路由
 	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join("web", "login.html"))
+		http.ServeFileFS(w, r, web.Files, "login.html")
 	})
 	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join("web", "register.html"))
+		http.ServeFileFS(w, r, web.Files, "register.html")
 	})
 	//
 
@@ -51,7 +49,7 @@ func NewRouter(
 	protectedMux := http.NewServeMux()
 	// 页面路由
 	protectedMux.HandleFunc("GET /profile", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join("web", "profile.html"))
+		http.ServeFileFS(w, r, web.Files, "profile.html")
 	})
 	//
 
@@ -104,7 +102,7 @@ func NewRouter(
 
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			http.ServeFile(w, r, filepath.Join("web", "index.html"))
+			http.ServeFileFS(w, r, web.Files, "index.html")
 			return
 		}
 
